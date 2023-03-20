@@ -63,16 +63,18 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 ! step 1 is a CG step, whereas steps 2 and 3 are partial steps from the PPCG algorithm to allow a middle step for the PP application
 
   rro = 0.0_8
-  
-!$OMP PARALLEL REDUCTION(+:rro)
-!$OMP DO
+
+!$ACC DATA &
+!$ACC PRESENT(r, Kx, Ky, Di, z, Mi, p, cp, bfp)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:rro)
   DO k=y_min,y_max
     DO j=x_min,x_max
       p(j, k) = 0.0_8
       z(j, k) = 0.0_8
     ENDDO
   ENDDO
-!$OMP END DO
 
   IF (preconditioner_type .NE. TL_PREC_NONE ) THEN
 
@@ -84,30 +86,29 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
                              r, z, Mi)
     ENDIF
 
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = z(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
   ELSE
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = r(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
   ENDIF
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min,y_max
     DO j=x_min,x_max
       rro = rro + r(j, k)*p(j, k)
     ENDDO
   ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
+!$ACC END KERNELS
+
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_cg_init_kernel
 
@@ -138,8 +139,11 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
 
   pw = 0.0_8
 
-!$OMP PARALLEL REDUCTION(+:pw)
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(w, Kx, Ky, p, Di)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:pw)
     DO k=y_min,y_max
         DO j=x_min,x_max
             w(j, k) = Di(j,k)*p(j, k)                             &
@@ -150,8 +154,9 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
+!$ACC END KERNELS
+
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_cg_calc_w_kernel
 
@@ -178,8 +183,11 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel_norxy(x_min,             &
 
   pw = 0.0_8
 
-!$OMP PARALLEL REDUCTION(+:pw)
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(w, Kx, Ky, p, Di)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:pw)
     DO k=y_min,y_max
         DO j=x_min,x_max
             w(j, k) = Di(j,k)*p(j, k)                             &
@@ -190,8 +198,8 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel_norxy(x_min,             &
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
+!$ACC END KERNELS
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_cg_calc_w_kernel_norxy
 
@@ -231,19 +239,22 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
 
   rrn = 0.0_8
 
-!$OMP PARALLEL REDUCTION(+:rrn)
+
+!$ACC DATA &
+!$ACC PRESENT(u, r, Mi, w, z, Kx, Ky, p, Di, cp, bfp)
+!$ACC KERNELS
+
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
 
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_min,y_max
         DO j=x_min,x_max
           u(j, k) =  u(j, k) + alpha   *p(j, k)
         ENDDO
       ENDDO
-!$OMP END DO NOWAIT
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:rrn)
       DO k=y_min,y_max
         DO j=x_min,x_max
           r(j, k) =  r(j, k) - alpha   *w(j, k)
@@ -251,55 +262,51 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
           rrn     = rrn      +  r(j, k)*z(j, k)
         ENDDO
       ENDDO
-!$OMP END DO NOWAIT
 
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
 
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_min,y_max
         DO j=x_min,x_max
           u(j, k) = u(j, k) + alpha*p(j, k)
         ENDDO
       ENDDO
-!$OMP END DO
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_min,y_max
         DO j=x_min,x_max
           r(j, k) = r(j, k) - alpha*w(j, k)
         ENDDO
       ENDDO
-!$OMP END DO
 
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, Di, rx, ry)
 
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:rrn)
       DO k=y_min,y_max
         DO j=x_min,x_max
           rrn = rrn + r(j, k)*z(j, k)
         ENDDO
       ENDDO
-!$OMP END DO NOWAIT
 
     ENDIF
   ELSE
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
         u(j, k) = u(j, k) + alpha*p(j, k)
       ENDDO
     ENDDO
-!$OMP END DO
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
         r(j, k) = r(j, k) - alpha*w(j, k)
         rrn     = rrn + r(j, k)*r(j, k)
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
   ENDIF
-!$OMP END PARALLEL
+!$ACC END KERNELS
+
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_cg_calc_ur_kernel
 
@@ -324,25 +331,28 @@ SUBROUTINE tea_leaf_cg_calc_p_kernel(x_min,             &
   INTEGER(KIND=4) :: j,k
   REAL(kind=8) :: beta
 
-!$OMP PARALLEL
+!$ACC DATA &
+!$ACC PRESENT(z, r, p)
+
+!$ACC KERNELS
   IF (preconditioner_type .NE. TL_PREC_NONE .or. tl_ppcg_active) THEN
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = z(j, k) + beta*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
   ELSE
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = r(j, k) + beta*p(j, k)
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
   ENDIF
-!$OMP END PARALLEL
+!$ACC END KERNELS
+
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_cg_calc_p_kernel
 
