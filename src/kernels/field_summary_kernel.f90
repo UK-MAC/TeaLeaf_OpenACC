@@ -45,10 +45,15 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
   mass=0.0
   ie=0.0
   temp=0.0
+  
+  
+!$ACC DATA &
+!$ACC PRESENT(density,energy1,u)
+!$ACC KERNELS  
 
-!$OMP PARALLEL PRIVATE(cell_vol, cell_mass)
-!$OMP DO REDUCTION(+ : vol,mass,ie,temp)
+!$ACC LOOP INDEPENDENT REDUCTION(+ : vol,mass,ie,temp)
   DO k=y_min,y_max
+!$ACC LOOP INDEPENDENT  
     DO j=x_min,x_max
       cell_vol=volume(j,k)
       cell_mass=cell_vol*density(j,k)
@@ -58,8 +63,9 @@ SUBROUTINE field_summary_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
       temp=temp+cell_mass*u(j,k)
     ENDDO
   ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
+!$ACC END KERNELS
+
+!$ACC END DATA
 
 END SUBROUTINE field_summary_kernel
 
