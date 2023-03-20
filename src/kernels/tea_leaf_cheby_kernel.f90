@@ -59,8 +59,11 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
   INTEGER :: j,k
   REAL(KIND=8) ::  rx, ry, theta
 
-!$OMP PARALLEL
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(u, u0, p , w , r, Mi, z , Kx, Ky, Di, cp, bfp)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             w(j, k) = Di(j,k)*u(j, k)                             &
@@ -69,7 +72,6 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
             r(j, k) = u0(j, k) - w(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
@@ -81,30 +83,32 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
                              r, z, Mi)
     ENDIF
 
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
         p(j, k) = z(j, k)/theta
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+
   ELSE
-!$OMP DO
+
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = r(j, k)/theta
         ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+
   ENDIF
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min,y_max
       DO j=x_min,x_max
           u(j, k) = u(j, k) + p(j, k)
       ENDDO
   ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
+!$ACC END KERNELS
+
+!$ACC END DATA
 
 END SUBROUTINE
 
@@ -148,8 +152,11 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
     INTEGER :: step, max_cheby_iters
     REAL(KIND=8), DIMENSION(max_cheby_iters) :: ch_alphas, ch_betas
 
-!$OMP PARALLEL
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(u, u0, p , w , r, Mi, z , Kx, Ky, Di, cp, bfp)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             w(j, k) = (1.0_8                                      &
@@ -160,7 +167,6 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
             r(j, k) = u0(j, k) - w(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
@@ -172,30 +178,31 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
                              r, z, Mi)
     ENDIF
 
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
         p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*z(j, k)
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+
   ELSE
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
         p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*r(j, k)
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+
   ENDIF
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min,y_max
     DO j=x_min,x_max
         u(j, k) = u(j, k) + p(j, k)
     ENDDO
   ENDDO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
+!$ACC END KERNELS
+
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_kernel_cheby_iterate
 
