@@ -77,30 +77,34 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
 
   ! State 1 is always the background state
 
-!$OMP PARALLEL PRIVATE(x_cent,y_cent, state,radius,jt,kt)
-
-!$OMP DO
+!$ACC DATA
+!$ACC KERNELS
+!$ACC LOOP INDEPENDENT
   DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+!$ACC LOOP INDEPENDENT  
     DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
       energy0(j,k)=state_energy(1)
     ENDDO
   ENDDO
-!$OMP END DO
-!$OMP DO
+  
+!$ACC LOOP INDEPENDENT
   DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+!$ACC LOOP INDEPENDENT  
     DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
       density(j,k)=state_density(1)
     ENDDO
   ENDDO
-!$OMP END DO
+!$ACC END KERNELS
 
   DO state=2,number_of_states
 
     x_cent=state_xmin(state)
     y_cent=state_ymin(state)
 
-!$OMP DO
+!$ACC KERNELS
+!$ACC LOOP INDEPENDENT
     DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
+!$ACC LOOP INDEPENDENT PRIVATE(radius)    
       DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
         IF(state_geometry(state).EQ.g_rect ) THEN
           IF (j >= x_min .and. j <= x_max .and. k >= y_min .and. k <= y_max) THEN
@@ -125,19 +129,20 @@ SUBROUTINE generate_chunk_kernel(x_min,x_max,y_min,y_max,halo_exchange_depth, &
         ENDIF
       ENDDO
     ENDDO
-!$OMP END DO
+!$ACC END KERNELS
 
   ENDDO
 
-!$OMP DO
+!$ACC KERNELS
+!$ACC LOOP INDEPENDENT
   DO k=y_min-halo_exchange_depth, y_max+halo_exchange_depth
     DO j=x_min-halo_exchange_depth, x_max+halo_exchange_depth
       u0(j,k) = energy0(j,k)*density(j,k)
     ENDDO
   ENDDO
-!$OMP END DO
+!$ACC END KERNELS
 
-!$OMP END PARALLEL
+!$ACC END DATA
 
 END SUBROUTINE generate_chunk_kernel
 
