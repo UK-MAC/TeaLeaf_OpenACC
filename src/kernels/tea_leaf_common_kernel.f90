@@ -62,86 +62,87 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
 
   REAL(KIND=8) ::  rx, ry
 
-!$OMP PARALLEL
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(density, energy, u, r, w, Kx, Ky, Di, Mi, u0, cp, bfp)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min, y_max
     DO j=x_min, x_max
       u(j,k) = energy(j,k)*density(j,k)
       u0(j,k) = energy(j,k)*density(j,k)
     ENDDO
   ENDDO
-!$OMP END DO
+
 
   IF (coef .EQ. RECIP_CONDUCTIVITY) THEN
-!$OMP DO
+  
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     ! use w as temp val
     DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
       DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
          w(j  ,k  )=1.0_8/density(j  ,k  )
       ENDDO
     ENDDO
-!$OMP END DO
+
   ELSE IF (coef .EQ. CONDUCTIVITY) THEN
-!$OMP DO
+  
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
       DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
          w(j  ,k  )=density(j  ,k  )
       ENDDO
     ENDDO
-!$OMP END DO
+
   ENDIF
 
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min-halo_exchange_depth + 1,y_max+halo_exchange_depth
     DO j=x_min-halo_exchange_depth + 1,x_max+halo_exchange_depth
       Kx(j,k)=(w(j-1,k  ) + w(j,k))/(2.0_8*w(j-1,k  )*w(j,k))
       Ky(j,k)=(w(j  ,k-1) + w(j,k))/(2.0_8*w(j  ,k-1)*w(j,k))
     ENDDO
   ENDDO
-!$OMP END DO
 
 ! Whether to apply reflective boundary conditions to all external faces
   IF (reflective_boundary .EQV. .FALSE.) THEN
     IF (zero_boundary(CHUNK_LEFT).EQV..TRUE.) THEN
-!$OMP DO
+    
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
         DO j=x_min-halo_exchange_depth,x_min
           Kx(j,k)=0.0_8
         ENDDO
       ENDDO
-!$OMP END DO
     ENDIF
     IF (zero_boundary(CHUNK_RIGHT).EQV..TRUE.) THEN
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_min-halo_exchange_depth,y_max+halo_exchange_depth
         DO j=x_max + 1,x_max+halo_exchange_depth
           Kx(j,k)=0.0_8
         ENDDO
       ENDDO
-!$OMP END DO
     ENDIF
     IF (zero_boundary(CHUNK_BOTTOM).EQV..TRUE.) THEN
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_min-halo_exchange_depth,y_min
         DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
           Ky(j,k)=0.0_8
         ENDDO
       ENDDO
-!$OMP END DO
     ENDIF
     IF (zero_boundary(CHUNK_TOP).EQV..TRUE.) THEN
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_max + 1,y_max+halo_exchange_depth
         DO j=x_min-halo_exchange_depth,x_max+halo_exchange_depth
           Ky(j,k)=0.0_8
         ENDDO
       ENDDO
-!$OMP END DO
     ENDIF
   ENDIF
 
 !Setup storage for the diagonal entries
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
     DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
       Di(j,k)=(1.0_8                                              &
@@ -149,7 +150,6 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
                 + rx*(Kx(j+1, k) + Kx(j, k)))
     ENDDO
   ENDDO
-!$OMP END DO
   
   IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
     CALL tea_block_init(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
@@ -159,7 +159,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
                            Mi, Kx, Ky, Di, rx, ry)
   ENDIF
 
-!$OMP DO
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             w(j, k) = Di(j,k)*u(j, k)                             &
@@ -171,8 +171,8 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
                               ! Only works one timestep is run
         ENDDO
     ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
+!$ACC END KERNELS
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_common_init_kernel
 
@@ -193,15 +193,18 @@ SUBROUTINE tea_leaf_kernel_finalise(x_min,    &
 
   INTEGER(KIND=4) :: j,k
 
-!$OMP PARALLEL
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(u, energy, density)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min, y_max
     DO j=x_min, x_max
       energy(j,k) = u(j,k) / density(j,k)
     ENDDO
   ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
+!$ACC END KERNELS
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_kernel_finalise
 
@@ -227,9 +230,12 @@ SUBROUTINE tea_leaf_calc_residual_kernel(x_min,       &
   REAL(KIND=8) :: smvp, rx, ry
 
   INTEGER(KIND=4) :: j,k
+  
+!$ACC DATA &
+!$ACC PRESENT(Kx, u, r, Ky, u0, Di)
 
-!$OMP PARALLEL PRIVATE(smvp)
-!$OMP DO
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min, y_max
       DO j=x_min, x_max
         smvp = Di(j,k)*u(j, k)                                &
@@ -238,8 +244,8 @@ SUBROUTINE tea_leaf_calc_residual_kernel(x_min,       &
         r(j, k) = u0(j, k) - smvp
       ENDDO
     ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
+!$ACC END KERNELS
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_calc_residual_kernel
 
@@ -261,15 +267,19 @@ SUBROUTINE tea_leaf_calc_2norm_kernel(x_min, &
 
   norm = 0.0_8
 
-!$OMP PARALLEL
-!$OMP DO REDUCTION(+:norm)
+
+!$ACC DATA &
+!$ACC PRESENT(arr)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:norm) 
     DO k=y_min,y_max
         DO j=x_min,x_max
             norm = norm + arr(j, k)*arr(j, k)
         ENDDO
     ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
+!$ACC END KERNELS
+!$ACC END DATA
 
 END SUBROUTINE tea_leaf_calc_2norm_kernel
 
@@ -291,7 +301,11 @@ SUBROUTINE tea_diag_init(x_min,             &
 
   REAL(KIND=8), PARAMETER :: omega=1.0_8
 
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(Kx, Ky, Di, Mi)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min-halo_exchange_depth+1,y_max+halo_exchange_depth-1
       DO j=x_min-halo_exchange_depth+1,x_max+halo_exchange_depth-1
         IF (Di(j, k) /= 0.0_8) THEN
@@ -302,7 +316,8 @@ SUBROUTINE tea_diag_init(x_min,             &
         ENDIF
       ENDDO
     ENDDO
-!$OMP END DO
+!$ACC END KERNELS
+!$ACC END DATA
 
 END SUBROUTINE
 
@@ -323,13 +338,18 @@ SUBROUTINE tea_diag_solve(x_min,              &
   REAL(KIND=8), DIMENSION(x_min-halo_exchange_depth:x_max+halo_exchange_depth,y_min-halo_exchange_depth:y_max+halo_exchange_depth) &
                           :: r, z, Mi
 
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(r, z, Mi)
+
+!$ACC KERNELS
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min-depth,y_max+depth
       DO j=x_min-depth,x_max+depth
         z(j, k) = Mi(j, k)*r(j, k)
       ENDDO
     ENDDO
-!$OMP END DO
+!$ACC END KERNELS
+!$ACC END DATA
 
 
 END SUBROUTINE
@@ -352,15 +372,16 @@ SUBROUTINE tea_block_init(x_min,             &
   REAL(KIND=8), DIMENSION(x_min:x_max,y_min:y_max) :: cp, bfp
   REAL(KIND=8) :: rx, ry
 
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(Kx, Ky, Di, cp, bfp)
+
+!$ACC KERNELS
+!$ACC LOOP INDEPENDENT
     DO ko=y_min,y_max,jac_block_size
 
       bottom = ko
       top = MIN(ko + jac_block_size - 1, y_max)
-
-#if defined(WITH_OMP4)
-!$OMP SIMD
-#endif
+!$ACC LOOP INDEPENDENT
       DO j=x_min, x_max
         k = bottom
         cp(j,k) = (-Ky(j, k+1)*ry)/Di(j, k)
@@ -371,7 +392,8 @@ SUBROUTINE tea_block_init(x_min,             &
         ENDDO
       ENDDO
     ENDDO
-!$OMP END DO
+!$ACC END KERNELS
+!$ACC END DATA
 
 END SUBROUTINE
 
@@ -401,17 +423,19 @@ SUBROUTINE tea_block_solve(x_min,             &
 
   k_extra = y_max - MOD(y_max, kstep)
 
-!$OMP DO
+!$ACC DATA &
+!$ACC PRESENT(Kx, Ky, Di, r, z, cp, bfp)
+
+!$ACC KERNELS
+!$ACC LOOP INDEPENDENT
     DO ko=y_min, k_extra, kstep
       upper_k = ko+kstep - jac_block_size
 
       DO ki=ko,upper_k,jac_block_size
         bottom = ki
         top = ki+jac_block_size - 1
-
-#if defined(WITH_OMP4)
-!$OMP SIMD PRIVATE(dp_l, z_l)
-#endif
+        
+!$ACC LOOP INDEPENDENT PRIVATE(dp_l, z_l)
         DO j=x_min,x_max
           k = bottom
           dp_l(k-bottom) = r(j, k)/Di(j, k)
@@ -433,16 +457,15 @@ SUBROUTINE tea_block_solve(x_min,             &
         ENDDO
       ENDDO
     ENDDO
-!$OMP END DO NOWAIT
+!$ACC END KERNELS
 
-!$OMP DO
+!$ACC KERNELS
+!$ACC LOOP INDEPENDENT
     DO ki=k_extra+1, y_max, jac_block_size
       bottom = MIN(ki, y_max)
       top = MIN(ki+jac_block_size-1, y_max)
 
-#if defined(WITH_OMP4)
-!$OMP SIMD PRIVATE(dp_l, z_l)
-#endif
+!$ACC LOOP INDEPENDENT PRIVATE(dp_l, z_l)
       DO j=x_min,x_max
         k = bottom
         dp_l(k-bottom) = r(j, k)/Di(j, k)
@@ -463,7 +486,8 @@ SUBROUTINE tea_block_solve(x_min,             &
         ENDDO
       ENDDO
     ENDDO
-!$OMP END DO
+!$ACC END KERNELS
+!$ACC END DATA
 
 END SUBROUTINE
 
