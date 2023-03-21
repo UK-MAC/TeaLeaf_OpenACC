@@ -17,6 +17,7 @@
 
 !>  @brief Fortran mpi buffer packing kernel
 !>  @author Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Packs/unpacks mpi send and receive buffers
 
 MODULE pack_kernel_module

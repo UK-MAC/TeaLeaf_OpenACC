@@ -17,6 +17,7 @@
 
 !>  @brief Controls the main diffusion cycle.
 !>  @author David Beckingsale, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Controls the top level cycle, invoking all the drivers and checks
 !>  for outputs and completion.
 

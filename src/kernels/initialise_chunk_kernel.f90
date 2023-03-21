@@ -17,6 +17,7 @@
 
 !>  @brief Fortran chunk initialisation kernel.
 !>  @author David Beckingsale, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Calculates mesh geometry for the mesh chunk based on the mesh size.
 
 MODULE initialise_chunk_kernel_module

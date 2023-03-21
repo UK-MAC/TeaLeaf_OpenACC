@@ -16,7 +16,7 @@
 ! TeaLeaf. If not, see http://www.gnu.org/licenses/.
 
 !>  @brief Fortran heat conduction kernel
-!>  @author Michael Boulton, Wayne Gaudin, Douglas Shanks
+!>  @author Michael Boulton, Wayne Gaudin, Douglas Shanks (kernels and OpenACC)
 !>  @details Implicitly calculates the change in temperature using the PPCG method
 
 MODULE tea_leaf_ppcg_kernel_module

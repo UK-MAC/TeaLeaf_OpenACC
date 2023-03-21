@@ -17,6 +17,7 @@
 
 !>  @brief Fortran mesh chunk generator
 !>  @author David Beckingsale, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Generates the field data on a mesh chunk based on the user specified
 !>  input for the states.
 !>

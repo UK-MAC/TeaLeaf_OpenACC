@@ -17,6 +17,7 @@
 
 !>  @brief Fortran heat conduction kernel
 !>  @author David Beckingsale, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Implicitly calculates the change in temperature using a Jacobi iteration
 
 MODULE tea_leaf_jacobi_kernel_module

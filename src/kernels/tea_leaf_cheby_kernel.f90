@@ -17,7 +17,9 @@
 
 !>  @brief Fortran heat conduction kernel
 !>  @author Michael Boulton, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Implicitly calculates the change in temperature using accelerated Chebyshev method
+
 
 MODULE tea_leaf_cheby_kernel_module
 

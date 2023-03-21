@@ -17,6 +17,7 @@
 
 !>  @brief Fortran heat conduction kernel
 !>  @author Michael Boulton, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Implicitly calculates the change in temperature using CG method
 
 MODULE tea_leaf_cg_kernel_module

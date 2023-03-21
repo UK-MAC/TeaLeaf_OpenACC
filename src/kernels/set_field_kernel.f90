@@ -17,6 +17,7 @@
 
 !>  @brief Fortran set field kernel.
 !>  @author David Beckingsale, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Copies all of the final start of step filed data to the end of
 !>  step data.
 

@@ -17,6 +17,7 @@
 
 !>  @brief Main set up routine
 !>  @author David Beckingsale, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details Invokes the mesh decomposer and sets up chunk connectivity. It then
 !>  allocates the communication buffers and call the chunk initialisation and
 !>  generation routines and primes the halo cells and writes an initial field summary.

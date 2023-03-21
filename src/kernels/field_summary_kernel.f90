@@ -17,6 +17,7 @@
 
 !>  @brief Fortran field summary kernel
 !>  @author David Beckingsale, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
 !>  @details The total mass, internal energy, temperature are calculated
 
 MODULE field_summary_kernel_module
