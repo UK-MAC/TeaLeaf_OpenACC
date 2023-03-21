@@ -75,6 +75,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
       z(j, k) = 0.0_8
     ENDDO
   ENDDO
+!$ACC END KERNELS
 
   IF (preconditioner_type .NE. TL_PREC_NONE ) THEN
 
@@ -85,21 +86,27 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, 0,           &
                              r, z, Mi)
     ENDIF
-
+!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = z(j, k)
         ENDDO
     ENDDO
+!$ACC END KERNELS
+    
   ELSE
+!$ACC KERNELS          
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = r(j, k)
         ENDDO
     ENDDO
+!$ACC END KERNELS
+    
   ENDIF
+!$ACC KERNELS  
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min,y_max
     DO j=x_min,x_max
@@ -149,8 +156,6 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel(x_min,             &
             w(j, k) = Di(j,k)*p(j, k)                             &
                 - ry*(Ky(j, k+1)*p(j, k+1) + Ky(j, k)*p(j, k-1))  &
                 - rx*(Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
-        ENDDO
-        DO j=x_min,x_max
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
@@ -193,8 +198,6 @@ SUBROUTINE tea_leaf_cg_calc_w_kernel_norxy(x_min,             &
             w(j, k) = Di(j,k)*p(j, k)                             &
                 - (Ky(j, k+1)*p(j, k+1) + Ky(j, k)*p(j, k-1))  &
                 - (Kx(j+1, k)*p(j+1, k) + Kx(j, k)*p(j-1, k))
-        ENDDO
-        DO j=x_min,x_max
             pw = pw + w(j, k)*p(j, k)
         ENDDO
     ENDDO
@@ -242,12 +245,11 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
 
 !$ACC DATA &
 !$ACC PRESENT(u, r, Mi, w, z, Kx, Ky, p, Di, cp, bfp)
-!$ACC KERNELS
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
     IF (preconditioner_type .EQ. TL_PREC_JAC_DIAG) THEN
-
+!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_min,y_max
         DO j=x_min,x_max
@@ -262,9 +264,10 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
           rrn     = rrn      +  r(j, k)*z(j, k)
         ENDDO
       ENDDO
+!$ACC END KERNELS
 
     ELSE IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
-
+!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
       DO k=y_min,y_max
         DO j=x_min,x_max
@@ -277,19 +280,22 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
           r(j, k) = r(j, k) - alpha*w(j, k)
         ENDDO
       ENDDO
+!$ACC END KERNELS
 
       CALL tea_block_solve(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
                              r, z, cp, bfp, Kx, Ky, Di, rx, ry)
-
+!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:rrn)
       DO k=y_min,y_max
         DO j=x_min,x_max
           rrn = rrn + r(j, k)*z(j, k)
         ENDDO
       ENDDO
+!$ACC END KERNELS
 
     ENDIF
   ELSE
+!$ACC KERNELS          
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
@@ -303,8 +309,9 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
         rrn     = rrn + r(j, k)*r(j, k)
       ENDDO
     ENDDO
-  ENDIF
 !$ACC END KERNELS
+    
+  ENDIF
 
 !$ACC END DATA
 
@@ -334,23 +341,25 @@ SUBROUTINE tea_leaf_cg_calc_p_kernel(x_min,             &
 !$ACC DATA &
 !$ACC PRESENT(z, r, p)
 
-!$ACC KERNELS
   IF (preconditioner_type .NE. TL_PREC_NONE .or. tl_ppcg_active) THEN
+!$ACC KERNELS          
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = z(j, k) + beta*p(j, k)
         ENDDO
     ENDDO
+!$ACC END KERNELS    
   ELSE
+!$ACC KERNELS          
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = r(j, k) + beta*p(j, k)
         ENDDO
     ENDDO
+!$ACC END KERNELS    
   ENDIF
-!$ACC END KERNELS
 
 !$ACC END DATA
 

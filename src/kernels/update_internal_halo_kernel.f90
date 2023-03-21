@@ -68,8 +68,8 @@ CONTAINS
                                                                kx_right,ky_right,di_right
 
 !$ACC DATA          &
-!$ACC PRESENT(density, energy0, pressure, viscosity, soundspeed, density1, energy1, xvel0, yvel0, xvel1, yvel1, vol_flux_x, mass_flux_x, vol_flux_y, mass_flux_y)    &
-!$ACC PRESENT(density_right,energy0_right,energy1_right,u_right,p_right,sd_right,r_right,z_right,kx_right,ky_right,di_right)
+!$ACC PRESENT(density,energy0,energy1, u, sd, p, r, z, kx, ky, di)    &
+!$ACC PRESENT(density_right,energy0_right,energy1_right, u_right,sd_right,p_right,r_right,z_right, kx_right,ky_right,di_right)
 
     IF (fields(FIELD_DENSITY).EQ.1) THEN
       CALL update_internal_halo_cell_left_right(x_min, x_max, y_min, y_max, density, &
@@ -222,7 +222,7 @@ CONTAINS
                                                               u_top, sd_top, p_top, r_top, z_top, kx_top, ky_top, di_top
 
 !$ACC DATA          &
-!$ACC PRESENT(density, energy0, pressure, viscosity, soundspeed, density1, energy1, xvel0, yvel0, xvel1, yvel1, vol_flux_x, mass_flux_x, vol_flux_y, mass_flux_y)    &
+!$ACC PRESENT( density,energy0,energy1, u, sd, p, r, z, kx, ky, di)    &
 !$ACC PRESENT(density_top,energy0_top,energy1_top,u_top,p_top,sd_top,r_top,z_top,kx_top,ky_top,di_top)
 
     IF (fields(FIELD_DENSITY).EQ.1) THEN

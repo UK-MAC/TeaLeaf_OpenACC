@@ -72,6 +72,7 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
             r(j, k) = u0(j, k) - w(j, k)
         ENDDO
     ENDDO
+!$ACC END KERNELS
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
@@ -82,24 +83,27 @@ SUBROUTINE tea_leaf_kernel_cheby_init(x_min,  &
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, 0,           &
                              r, z, Mi)
     ENDIF
-
+!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
         p(j, k) = z(j, k)/theta
       ENDDO
     ENDDO
+!$ACC END KERNELS
 
   ELSE
-
+!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
             p(j, k) = r(j, k)/theta
         ENDDO
     ENDDO
+!$ACC END KERNELS
 
   ENDIF
+!$ACC KERNELS  
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min,y_max
       DO j=x_min,x_max
@@ -167,6 +171,7 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
             r(j, k) = u0(j, k) - w(j, k)
         ENDDO
     ENDDO
+!$ACC END KERNELS
 
   IF (preconditioner_type .NE. TL_PREC_NONE) THEN
 
@@ -177,23 +182,27 @@ SUBROUTINE tea_leaf_kernel_cheby_iterate(x_min, &
       CALL tea_diag_solve(x_min, x_max, y_min, y_max, halo_exchange_depth, 0,           &
                              r, z, Mi)
     ENDIF
-
+!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
         p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*z(j, k)
       ENDDO
     ENDDO
+!$ACC END KERNELS
 
   ELSE
+!$ACC KERNELS          
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
       DO j=x_min,x_max
         p(j, k) = ch_alphas(step)*p(j, k) + ch_betas(step)*r(j, k)
       ENDDO
     ENDDO
+!$ACC END KERNELS
 
   ENDIF
+!$ACC KERNELS  
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min,y_max
     DO j=x_min,x_max

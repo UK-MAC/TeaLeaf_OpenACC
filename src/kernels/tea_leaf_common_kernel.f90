@@ -150,6 +150,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
                 + rx*(Kx(j+1, k) + Kx(j, k)))
     ENDDO
   ENDDO
+!$ACC END KERNELS
   
   IF (preconditioner_type .EQ. TL_PREC_JAC_BLOCK) THEN
     CALL tea_block_init(x_min, x_max, y_min, y_max, halo_exchange_depth,             &
@@ -159,6 +160,7 @@ SUBROUTINE tea_leaf_common_init_kernel(x_min,  &
                            Mi, Kx, Ky, Di, rx, ry)
   ENDIF
 
+!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min,y_max
         DO j=x_min,x_max
