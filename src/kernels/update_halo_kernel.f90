@@ -154,8 +154,9 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
 
   IF (chunk_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_LEFT).EQ.EXTERNAL_FACE) THEN
 !$ACC KERNELS
-!$ACC LOOP COLLAPSE(2) INDEPENDENT
+!$ACC LOOP INDEPENDENT
     DO k=y_min-depth,y_max+depth
+!$ACC LOOP INDEPENDENT
       DO j=1,depth
         mesh(1-j,k)=mesh(0+j,k)
       ENDDO
@@ -164,8 +165,9 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
   ENDIF
   IF (chunk_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_RIGHT).EQ.EXTERNAL_FACE) THEN
 !$ACC KERNELS
-!$ACC LOOP COLLAPSE(2) INDEPENDENT
+!$ACC LOOP INDEPENDENT
     DO k=y_min-depth,y_max+depth
+!$ACC LOOP INDEPENDENT
       DO j=1,depth
         mesh(x_max+j,k)=mesh(x_max+1-j,k)
       ENDDO
@@ -174,14 +176,15 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
   ENDIF
 
 ! Don't need barrier if depth is only 1 (there isn't a barrier in ACC)
-!!$  IF (depth .gt. 1) then
-!!$OMP BARRIER
-!!$  ENDIF
+!$  IF (depth .gt. 1) then
+!$ACC WAIT !OMP BARRIER
+!$  ENDIF
 
   IF (chunk_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_BOTTOM).EQ.EXTERNAL_FACE) THEN
 !$ACC KERNELS
-!$ACC LOOP COLLAPSE(2) INDEPENDENT
+!$ACC LOOP INDEPENDENT
     DO k=1,depth
+!$ACC LOOP INDEPENDENT
       DO j=x_min-depth,x_max+depth
         mesh(j,1-k)=mesh(j,0+k)
       ENDDO
@@ -190,8 +193,9 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
   ENDIF
   IF (chunk_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE .AND. tile_neighbours(CHUNK_TOP).EQ.EXTERNAL_FACE) THEN
 !$ACC KERNELS
-!$ACC LOOP COLLAPSE(2) INDEPENDENT
+!$ACC LOOP INDEPENDENT
     DO k=1,depth
+!$ACC LOOP INDEPENDENT
       DO j=x_min-depth,x_max+depth
         mesh(j,y_max+k)=mesh(j,y_max+1-k)
       ENDDO
@@ -202,4 +206,3 @@ SUBROUTINE update_halo_cell(x_min,x_max,y_min,y_max,halo_exchange_depth,    &
 END SUBROUTINE update_halo_cell
 
 END MODULE update_halo_kernel_module
-
