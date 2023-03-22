@@ -1,3 +1,27 @@
+!Crown Copyright 2014 AWE.
+!
+! This file is part of TeaLeaf.
+!
+! TeaLeaf is free software: you can redistribute it and/or modify it under
+! the terms of the GNU General Public License as published by the
+! Free Software Foundation, either version 3 of the License, or (at your option)
+! any later version.
+!
+! TeaLeaf is distributed in the hope that it will be useful, but
+! WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+! FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+! details.
+!
+! You should have received a copy of the GNU General Public License along with
+! TeaLeaf. If not, see http://www.gnu.org/licenses/.
+
+!>  @brief Fortran kernel to update the external halo cells in a chunk.
+!>  @author David Beckingsale, Wayne Gaudin
+!>  @author Douglas Shanks (OpenACC)
+!>  @details Updates halo cells for the required fields at the required depth
+!>  for any halo cells that lie on an external boundary. The location and type
+!>  of data governs how this is carried out. External boundaries are always
+!>  reflective.
 
 MODULE update_internal_halo_kernel_module
 
@@ -167,8 +191,6 @@ CONTAINS
         mesh_right(1-j,k)=mesh_left(x_max_left+1-j,k)
       ENDDO
     ENDDO
-!$ACC END KERNELS
-!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=y_min_left-depth,y_max_left+depth
       DO j=1,depth
@@ -319,8 +341,6 @@ CONTAINS
         mesh_top(j,1-k)=mesh_bottom(j,y_max_bottom+1-k)
       ENDDO
     ENDDO
-!$ACC END KERNELS
-!$ACC KERNELS
 !$ACC LOOP COLLAPSE(2) INDEPENDENT
     DO k=1,depth
       DO j=x_min_bottom-depth,x_max_bottom+depth
@@ -332,4 +352,3 @@ CONTAINS
   END SUBROUTINE update_internal_halo_cell_bottom_top
 
 END MODULE update_internal_halo_kernel_module
-
