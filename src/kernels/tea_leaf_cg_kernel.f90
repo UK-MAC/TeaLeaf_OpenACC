@@ -69,7 +69,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
 !$ACC PRESENT(r, Kx, Ky, Di, z, Mi, p, cp, bfp)
 
 !$ACC KERNELS
-!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:rro)
+!$ACC LOOP COLLAPSE(2) INDEPENDENT
   DO k=y_min,y_max
     DO j=x_min,x_max
       p(j, k) = 0.0_8
@@ -108,7 +108,7 @@ SUBROUTINE tea_leaf_cg_init_kernel(x_min,  &
     
   ENDIF
 !$ACC KERNELS  
-!$ACC LOOP COLLAPSE(2) INDEPENDENT
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:rro)
   DO k=y_min,y_max
     DO j=x_min,x_max
       rro = rro + r(j, k)*p(j, k)
@@ -303,7 +303,7 @@ SUBROUTINE tea_leaf_cg_calc_ur_kernel(x_min,             &
         u(j, k) = u(j, k) + alpha*p(j, k)
       ENDDO
     ENDDO
-!$ACC LOOP COLLAPSE(2) INDEPENDENT
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:rrn)
     DO k=y_min,y_max
       DO j=x_min,x_max
         r(j, k) = r(j, k) - alpha*w(j, k)
