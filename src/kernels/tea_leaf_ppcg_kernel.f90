@@ -484,7 +484,7 @@ SUBROUTINE tea_leaf_ppcg_calc_zrnorm_kernel(x_min, &
 
   ELSE
 !$ACC KERNELS  
-!$ACC LOOP COLLAPSE(2) INDEPENDENT
+!$ACC LOOP COLLAPSE(2) INDEPENDENT REDUCTION(+:norm)
     DO k=y_min,y_max
         DO j=x_min,x_max
             norm = norm + r(j, k)*r(j, k)
